@@ -1,0 +1,190 @@
+--// Block Spin Style Hub - Safe Starter
+--// ใช้ใน Roblox Studio / เกมที่คุณเป็นเจ้าของ
+--// ใส่เป็น LocalScript ใน StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Clean old UI
+local old = playerGui:FindFirstChild("BlockSpinHub")
+if old then old:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "BlockSpinHub"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.Parent = playerGui
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(420, 300)
+main.Position = UDim2.new(0.5, -210, 0.5, -150)
+main.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.5
+stroke.Transparency = 0.35
+stroke.Parent = main
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, -60, 0, 44)
+title.Position = UDim2.fromOffset(18, 8)
+title.Text = "BLOCK SPIN HUB"
+title.TextSize = 22
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.new(1,1,1)
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(38, 38)
+close.Position = UDim2.new(1, -48, 0, 10)
+close.Text = "×"
+close.TextSize = 24
+close.Font = Enum.Font.GothamBold
+close.TextColor3 = Color3.new(1,1,1)
+close.BackgroundColor3 = Color3.fromRGB(42, 42, 52)
+close.BorderSizePixel = 0
+close.Parent = main
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 10)
+
+local content = Instance.new("Frame")
+content.BackgroundTransparency = 1
+content.Size = UDim2.new(1, -36, 1, -70)
+content.Position = UDim2.fromOffset(18, 58)
+content.Parent = main
+
+local layout = Instance.new("UIGridLayout")
+layout.CellSize = UDim2.fromOffset(185, 52)
+layout.CellPadding = UDim2.fromOffset(10, 10)
+layout.Parent = content
+
+local states = {
+    ESP = false,
+    AimAssist = false,
+    Speed = false,
+    AutoCollect = false,
+}
+
+local function makeToggle(name, callback)
+    local b = Instance.new("TextButton")
+    b.Name = name
+    b.AutoButtonColor = true
+    b.BackgroundColor3 = Color3.fromRGB(36, 36, 45)
+    b.BorderSizePixel = 0
+    b.TextSize = 16
+    b.Font = Enum.Font.GothamSemibold
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Parent = content
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 12)
+
+    local function refresh()
+        b.Text = name .. " : " .. (states[name] and "ON" or "OFF")
+    end
+
+    refresh()
+
+    b.Activated:Connect(function()
+        states[name] = not states[name]
+        refresh()
+        callback(states[name])
+    end)
+
+    return b
+end
+
+makeToggle("ESP", function(enabled)
+    -- Safe hook: connect this to your own game's ESP/debug system.
+    print("ESP =", enabled)
+end)
+
+makeToggle("AimAssist", function(enabled)
+    -- Safe hook: connect this to an assist system in your own game.
+    print("AimAssist =", enabled)
+end)
+
+makeToggle("Speed", function(enabled)
+    local character = player.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.WalkSpeed = enabled and 24 or 16
+    end
+end)
+
+makeToggle("AutoCollect", function(enabled)
+    -- Safe hook: connect this to your own game's collectible system.
+    print("AutoCollect =", enabled)
+end)
+
+close.Activated:Connect(function()
+    main.Visible = false
+end)
+
+-- Small reopen button
+local reopen = Instance.new("TextButton")
+reopen.Size = UDim2.fromOffset(56, 56)
+reopen.Position = UDim2.new(0, 16, 0.5, -28)
+reopen.Text = "HB"
+reopen.TextSize = 18
+reopen.Font = Enum.Font.GothamBold
+reopen.TextColor3 = Color3.new(1,1,1)
+reopen.BackgroundColor3 = Color3.fromRGB(22,22,28)
+reopen.BorderSizePixel = 0
+reopen.Visible = false
+reopen.Parent = gui
+Instance.new("UICorner", reopen).CornerRadius = UDim.new(0, 16)
+
+reopen.Activated:Connect(function()
+    main.Visible = true
+    reopen.Visible = false
+end)
+
+close.Activated:Connect(function()
+    main.Visible = false
+    reopen.Visible = true
+end)
+
+-- Drag support (mouse + touch)
+local dragging = false
+local dragStart
+local startPos
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+        return
+    end
+
+    local delta = input.Position - dragStart
+    main.Position = UDim2.new(
+        startPos.X.Scale, startPos.X.Offset + delta.X,
+        startPos.Y.Scale, startPos.Y.Offset + delta.Y
+    )
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
